@@ -6,11 +6,34 @@ const port = 3000
 
 const orders = []
 
-app.get('/orders', (request, response) => {
+const checkUSerId = (request, response, next) => {
+    const { id } = request.params
+    const index = orders.findIndex(order => order.id === id)
+
+    if(index < 0) {
+        return response.status(404).json({ error: "User not found!"})
+    }
+
+    request.userIndex = index
+    request.userId = id
+
+    next()
+}
+
+const methodAndUrl = (request, response, next) => {
+    const method = request.method
+    const url = request.url
+
+    console.log(`${method} - ${url}`)
+
+    next()
+}
+
+app.get('/orders', methodAndUrl, (request, response) => {
     response.json(orders)
 })
 
-app.post('/orders', (request, response) => {
+app.post('/orders', methodAndUrl, (request, response) => {
     const { order, clientName, price, status } = request.body
     const newOrder = { id: uuid.v4(), order, clientName, price, status: "Em preparação" }
 
@@ -19,42 +42,26 @@ app.post('/orders', (request, response) => {
     return response.status(201).json(newOrder)
 })
 
-app.put('/orders/:id', (request, response) => {
-    const { id } = request.params
+app.put('/orders/:id', checkUSerId, methodAndUrl, (request, response) => {
     const { order, clientName, price, status } = request.body
+    const index = request.userIndex
+    const id = request.userId
     const updateOrder = { id, order, clientName, price, status }
-    const index = orders.findIndex(order => order.id === id)
-
-    if(index < 0) {
-        return response.status(404).json({ message: "User not found!"})
-    }
-
+    
     orders[index] = updateOrder
 
     return response.json(updateOrder)
 })
 
-app.delete('/orders/:id', (request, response) => {
-    const { id } = request.params
-    const index = orders.findIndex(order => order.id === id)
-    
-    if(index < 0) {
-        return response.status(404).json({ message: "User not found!"})
-    }
-
+app.delete('/orders/:id', checkUSerId, methodAndUrl, (request, response) => {
+    const index = request.userIndex
     orders.splice(index, 1)
 
     return response.status(204).json()
 })
 
-app.patch('/orders/:id', (request, response) => {
-    const id = request.params.id
-    const index = orders.findIndex(order => order.id === id)
-
-    if(index < 0) {
-        return response.status(404).json({ message: "User not found!"})
-    }
-
+app.patch('/orders/:id', checkUSerId, methodAndUrl, (request, response) => {
+    const index = request.userIndex
     const oldOrder = orders[index]
     const updateStatus = {
         ...oldOrder,
