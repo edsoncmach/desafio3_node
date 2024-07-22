@@ -34,12 +34,16 @@ app.get('/orders', methodAndUrl, (request, response) => {
 })
 
 app.post('/orders', methodAndUrl, (request, response) => {
-    const { order, clientName, price, status } = request.body
-    const newOrder = { id: uuid.v4(), order, clientName, price, status: "Em preparação" }
+    try {
+        const { order, clientName, price, status } = request.body
+        const newOrder = { id: uuid.v4(), order, clientName, price, status: "Em preparação" }
 
-    orders.push(newOrder)
+        orders.push(newOrder)
 
-    return response.status(201).json(newOrder)
+        return response.status(201).json(newOrder)
+    } catch(err){
+        return response.status(500).json({ erro: err.message })
+    }
 })
 
 app.put('/orders/:id', checkUSerId, methodAndUrl, (request, response) => {
